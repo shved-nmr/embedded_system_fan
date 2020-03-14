@@ -17,7 +17,8 @@
 #endif
 
 #include <cr_section_macros.h>
-
+#include "console.h"
+#include "I2C.h"
 // TODO: insert other include files here
 
 // TODO: insert other definitions and declarations here
@@ -87,10 +88,10 @@ void printRegister(ModbusMaster& node, uint16_t reg)
 	// do something with data if read is successful
 	if (result == node.ku8MBSuccess)
 	{
-		printf("R%d=%04X\n", reg, node.getResponseBuffer(0));
+		console::log(50, "R%d=%04X\n", reg, node.getResponseBuffer(0));
 	}
 	else {
-		printf("R%d=???\n", reg);
+		console::log(50, "R%d=???\n", reg);
 	}
 }
 
@@ -103,7 +104,7 @@ bool setFrequency(ModbusMaster& node, uint16_t freq)
 
 	node.writeSingleRegister(1, freq); // set motor frequency
 
-	printf("Set freq = %d\n", freq/40); // for debugging
+	console::log(50, "Set freq = %d\n", freq/40); // for debugging
 
 	// wait until we reach set point or timeout occurs
 	ctr = 0;
@@ -119,7 +120,7 @@ bool setFrequency(ModbusMaster& node, uint16_t freq)
 		ctr++;
 	} while(ctr < 20 && !atSetpoint);
 
-	printf("Elapsed: %d\n", ctr * delay); // for debugging
+	console::log(50, "Elapsed: %d\n", ctr * delay); // for debugging
 
 	return atSetpoint;
 }
@@ -168,10 +169,10 @@ void abbModbusTest()
 		// note: sometimes we don't succeed on first read so we try up to threee times
 		// if read is successful print frequency and current (scaled values)
 		if (result == node.ku8MBSuccess) {
-			printf("F=%4d, I=%4d  (ctr=%d)\n", node.getResponseBuffer(0), node.getResponseBuffer(1),j);
+			console::log(50, "F=%4d, I=%4d  (ctr=%d)\n", node.getResponseBuffer(0), node.getResponseBuffer(1),j);
 		}
 		else {
-			printf("ctr=%d\n",j);
+			console::log(50, "ctr=%d\n",j);
 		}
 
 		Sleep(3000);
@@ -197,7 +198,7 @@ bool setFrequency(ModbusMaster& node, uint16_t freq)
 
 	Frequency = freq; // set motor frequency
 
-	printf("Set freq = %d\n", freq/40); // for debugging
+	console::log(50, "Set freq = %d\n", freq/40); // for debugging
 
 	// wait until we reach set point or timeout occurs
 	ctr = 0;
@@ -211,7 +212,7 @@ bool setFrequency(ModbusMaster& node, uint16_t freq)
 		ctr++;
 	} while(ctr < 20 && !atSetpoint);
 
-	printf("Elapsed: %d\n", ctr * delay); // for debugging
+	console::log(50, "Elapsed: %d\n", ctr * delay); // for debugging
 
 	return atSetpoint;
 }
@@ -229,35 +230,44 @@ void abbModbusTest()
 
 
 	// need to use explicit conversion since printf's variable argument doesn't automatically convert this to an integer
-	printf("Status=%04X\n", (int)StatusWord); // for debugging
+	console::log(50, "Status=%04X\n", (int)StatusWord); // for debugging
 
 	ControlWord = 0x0406; // prepare for starting
 
-	printf("Status=%04X\n", (int)StatusWord); // for debugging
+	console::log(50, "Status=%04X\n", (int)StatusWord); // for debugging
 
 	Sleep(1000); // give converter some time to set up
 	// note: we should have a startup state machine that check converter status and acts per current status
 	//       but we take the easy way out and just wait a while and hope that everything goes well
 
-	printf("Status=%04X\n", (int)StatusWord); // for debugging
+	console::log(50, "Status=%04X\n", (int)StatusWord); // for debugging
 
 	ControlWord = 0x047F; // set drive to start mode
 
-	printf("Status=%04X\n", (int)StatusWord); // for debugging
+	console::log(50, "Status=%04X\n", (int)StatusWord); // for debugging
 
 	Sleep(1000); // give converter some time to set up
 	// note: we should have a startup state machine that check converter status and acts per current status
 	//       but we take the easy way out and just wait a while and hope that everything goes well
 
-	printf("Status=%04X\n", (int)StatusWord); // for debugging
+	console::log(50, "Status=%04X\n", (int)StatusWord); // for debugging
 
 	int i = 0;
 	const uint16_t fa[20] = { 1000, 2000, 3000, 3500, 4000, 5000, 7000, 8000, 10000, 15000, 20000, 9000, 8000, 7000, 6000, 5000, 4000, 3000, 2000, 1000 };
 
-	while (1) {
+	I2C i2c{{}};
+	uint8_t i2cdata[3];
+	uint8_t write_cmd = 0xF1;
 
+	while (1) {
+		i2c.write(0x40, &write_cmd, 1);
+		Sleep(1000);
+		//printf("Hello, World");
+		i2c.read(0x40, i2cdata, 3);
+		uint16_t val = i2cdata[0] << 8 | i2cdata[1];
+		console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val,i2cdata[2]);
 		// just print the value without checking if we got a -1
-		printf("F=%4d, I=%4d\n", (int) OutputFrequency, (int) Current);
+		console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency, (int) Current);
 
 		Sleep(3000);
 		i++;
@@ -267,6 +277,7 @@ void abbModbusTest()
 		// frequency is scaled:
 		// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
 		setFrequency(node, fa[i]);
+
 	}
 }
 #endif
@@ -300,7 +311,7 @@ void modbusTest()
 			{
 				data[j] = node.getResponseBuffer(j);
 			}
-			printf("%6d, %6d, %6d, %6d, %6d, %6d\n", data[0], data[1], data[2], data[3], data[4], data[5]);
+			console::log(50, "%6d, %6d, %6d, %6d, %6d, %6d\n", data[0], data[1], data[2], data[3], data[4], data[5]);
 		}
 		Sleep(1000);
 	}
@@ -312,8 +323,7 @@ void modbusTest()
  * @brief	Main UART program body
  * @return	Always returns 1
  */
-int main(void)
-{
+int main(void){
 
 #if defined (__USE_LPCOPEN)
 	// Read clock settings and update SystemCoreClock variable
@@ -322,8 +332,6 @@ int main(void)
 	// Set up and initialize all required blocks and
 	// functions related to the board hardware
 	Board_Init();
-	// Set the LED to the state of "On"
-	Board_LED_Set(0, true);
 #endif
 #endif
 	LpcPinMap none = {-1, -1}; // unused pin has negative values in it
@@ -338,10 +346,13 @@ int main(void)
 	/* Enable and setup SysTick Timer at a periodic rate */
 	SysTick_Config(SystemCoreClock / 1000);
 
-	Board_LED_Set(0, false);
-	Board_LED_Set(1, true);
-	printf("Started\n"); // goes to ITM console if retarget_itm.c is included
+	//Board_LED_Set(0, false);
+	//Board_LED_Set(1, true);
+	console::log(50, "Started\n"); // goes to ITM console if retarget_itm.c is included
 	dbgu.write("Hello, world\n");
+
+
+
 
 	abbModbusTest();
 

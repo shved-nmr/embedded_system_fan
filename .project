@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Fan_Project</name>
+	<name>Proj</name>
 	<comment></comment>
 	<projects>
+		<project>lpc_board_nxp_lpcxpresso_1549</project>
 		<project>lpc_chip_15xx</project>
 	</projects>
 	<buildSpec>
