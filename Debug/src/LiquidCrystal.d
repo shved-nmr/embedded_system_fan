@@ -1,5 +1,5 @@
-src/main.o src/main.d: ../src/main.cpp \
- C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_board_nxp_lpcxpresso_1549\inc/board.h \
+src/LiquidCrystal.o src/LiquidCrystal.d: ../src/LiquidCrystal.cpp \
+ ../src/LiquidCrystal.h \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/chip.h \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/lpc_types.h \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/sys_config.h \
@@ -47,13 +47,9 @@ src/main.o src/main.d: ../src/main.cpp \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/i2cm_15xx.h \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/i2c_common_15xx.h \
  C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/i2cs_15xx.h \
- C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_board_nxp_lpcxpresso_1549\inc/board_api.h \
- C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/lpc_types.h \
- ../src/console.h ../src/ITM_write.h ../src/I2C.h ../src/DigitalIoPin.h \
- ../src/LiquidCrystal.h ../src/ModbusMaster.h ../src/word.h \
- ../src/SerialPort.h ../src/LpcUart.h ../src/ModbusRegister.h
+ ../src/DigitalIoPin.h
 
-C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_board_nxp_lpcxpresso_1549\inc/board.h:
+../src/LiquidCrystal.h:
 
 C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/chip.h:
 
@@ -149,26 +145,4 @@ C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/i
 
 C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/i2cs_15xx.h:
 
-C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_board_nxp_lpcxpresso_1549\inc/board_api.h:
-
-C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\inc/lpc_types.h:
-
-../src/console.h:
-
-../src/ITM_write.h:
-
-../src/I2C.h:
-
 ../src/DigitalIoPin.h:
-
-../src/LiquidCrystal.h:
-
-../src/ModbusMaster.h:
-
-../src/word.h:
-
-../src/SerialPort.h:
-
-../src/LpcUart.h:
-
-../src/ModbusRegister.h:

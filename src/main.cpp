@@ -19,9 +19,8 @@
 #include <cr_section_macros.h>
 #include "console.h"
 #include "I2C.h"
-// TODO: insert other include files here
-
-// TODO: insert other definitions and declarations here
+#include "DigitalIoPin.h"
+#include "LiquidCrystal.h"
 
 #include <cstring>
 #include <cstdio>
@@ -214,71 +213,6 @@ bool setFrequency(ModbusMaster &node, uint16_t freq) {
 
 	return atSetpoint;
 }
-
-void abbModbusTest() {
-	ModbusMaster node(2); // Create modbus object that connects to slave id 2
-	node.begin(9600); // set transmission rate - other parameters are set inside the object and can't be changed here
-
-	ModbusRegister ControlWord(&node, 0);
-	ModbusRegister StatusWord(&node, 3);
-	ModbusRegister OutputFrequency(&node, 102);
-	ModbusRegister Current(&node, 103);
-
-	// need to use explicit conversion since printf's variable argument doesn't automatically convert this to an integer
-	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
-
-	ControlWord = 0x0406; // prepare for starting
-
-	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
-
-	Sleep(1000); // give converter some time to set up
-	// note: we should have a startup state machine that check converter status and acts per current status
-	//       but we take the easy way out and just wait a while and hope that everything goes well
-
-	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
-
-	ControlWord = 0x047F; // set drive to start mode
-
-	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
-
-	Sleep(1000); // give converter some time to set up
-	// note: we should have a startup state machine that check converter status and acts per current status
-	//       but we take the easy way out and just wait a while and hope that everything goes well
-
-	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
-
-	int i = 0;
-
-	I2C i2c { { } };
-	uint8_t i2cdata[3];
-	uint8_t write_cmd = 0xF1;
-
-	const int pressure = 50;
-
-	while (1) {
-		i2c.write(0x40, &write_cmd, 1);
-		Sleep(1000);
-		i2c.read(0x40, i2cdata, 3);
-		int16_t val = i2cdata[0] << 8 | i2cdata[1];
-		val = val / 240; //Convert to Pascal
-		val = val * 0.95; //Atmospheric correction
-		console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val, i2cdata[2]);
-		// just print the value without checking if we got a -1
-		console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
-				(int) Current);
-		if (val < pressure - 5 || val > pressure + 5) {
-			if (val < pressure) { //50 pascal
-				i += 500;
-			} else if (val > pressure) {
-				i -= 500;
-			}
-		}
-		// frequency is scaled:
-		// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
-		setFrequency(node, i);
-
-	}
-}
 #endif
 
 void modbusTest() {
@@ -317,16 +251,10 @@ void modbusTest() {
  * @return	Always returns 1
  */
 int main(void) {
-
-#if defined (__USE_LPCOPEN)
-	// Read clock settings and update SystemCoreClock variable
 	SystemCoreClockUpdate();
-#if !defined(NO_BOARD_LIB)
-	// Set up and initialize all required blocks and
-	// functions related to the board hardware
 	Board_Init();
-#endif
-#endif
+	Chip_RIT_Init(LPC_RITIMER);
+
 	LpcPinMap none = { -1, -1 }; // unused pin has negative values in it
 	LpcPinMap txpin = { 0, 18 }; // transmit pin that goes to debugger's UART->USB converter
 	LpcPinMap rxpin = { 0, 13 }; // receive pin that goes to debugger's UART->USB converter
@@ -346,8 +274,98 @@ int main(void) {
 	console::log(50, "Started\n"); // goes to ITM console if retarget_itm.c is included
 	dbgu.write("Hello, world\n");
 
-	abbModbusTest();
+	ModbusMaster node(2); // Create modbus object that connects to slave id 2
+	node.begin(9600); // set transmission rate - other parameters are set inside the object and can't be changed here
 
+	ModbusRegister ControlWord(&node, 0);
+	ModbusRegister StatusWord(&node, 3);
+	ModbusRegister OutputFrequency(&node, 102);
+	ModbusRegister Current(&node, 103);
+
+	// need to use explicit conversion since printf's variable argument doesn't automatically convert this to an integer
+	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
+
+	ControlWord = 0x0406; // prepare for starting
+
+	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
+
+	Sleep(1000); // give converter some time to set up
+	// note: we should have a startup state machine that check converter status and acts per current status
+	//       but we take the easy way out and just wait a while and hope that everything goes well
+
+	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
+
+	ControlWord = 0x047F; // set drive to start mode
+
+	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
+
+	Sleep(1000); // give converter some time to set up
+	// note: we should have a startup state machine that check converter status and acts per current status
+	//       but we take the easy way out and just wait a while and hope that everything goes well
+
+	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
+
+	int i = 0;
+
+	I2C i2c { { } };
+	uint8_t i2cdata[3];
+	uint8_t write_cmd = 0xF1;
+
+	int pressure = 0;
+
+	DigitalIoPin b1(0, 10, 1, 1, 0);
+	DigitalIoPin b2(0, 16, 1, 1, 0);
+	DigitalIoPin b3(1, 3, 1, 1, 0);
+
+	DigitalIoPin rs(0, 8, false, true, false);
+	DigitalIoPin en(1, 6, false, true, false);
+	DigitalIoPin d4(1, 8, false, true, false);
+	DigitalIoPin d5(0, 5, false, true, false);
+	DigitalIoPin d6(0, 6, false, true, false);
+	DigitalIoPin d7(0, 7, false, true, false);
+	LiquidCrystal lcd(&rs, &en, &d4, &d5, &d6, &d7);
+	lcd.begin(16, 2);
+	lcd.setCursor(0, 0);
+	lcd.print("Automatic");
+	lcd.setCursor(1, 1);
+	lcd.print("Pressure:");
+	//13,1 dynamic number
+	char pressurearr[7];
+
+	while (1) {
+		i2c.write(0x40, &write_cmd, 1);
+		Sleep(1000);
+		i2c.read(0x40, i2cdata, 3);
+		int16_t val = i2cdata[0] << 8 | i2cdata[1];
+		val = val / 240; //Convert to Pascal
+		val = val * 0.95; //Atmospheric correction
+		console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val, i2cdata[2]);
+		// just print the value without checking if we got a -1
+		console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
+				(int) Current);
+		if (val < pressure - 2 || val > pressure + 2) {
+			if (val < pressure) { //50 pascal
+				i += 500;
+			} else if (val > pressure) {
+				i -= 500;
+			}
+		}
+		if(b1.read()) {
+			pressure+=5;
+			Sleep(200);
+		}
+		if(b3.read()) {
+			pressure-=5;
+			Sleep(200);
+		}
+		lcd.setCursor(10, 1);
+		snprintf(pressurearr, 7, "%3d\pa", pressure);
+		lcd.print(pressurearr);
+		// frequency is scaled:
+		// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
+		setFrequency(node, i);
+
+	}
 	return 1;
 }
 

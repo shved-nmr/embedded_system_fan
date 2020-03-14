@@ -4,7 +4,9 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/DigitalIoPin.cpp \
 ../src/I2C.cpp \
+../src/LiquidCrystal.cpp \
 ../src/LpcUart.cpp \
 ../src/ModbusMaster.cpp \
 ../src/ModbusRegister.cpp \
@@ -21,8 +23,10 @@ C_SRCS += \
 ../src/sysinit.c 
 
 OBJS += \
+./src/DigitalIoPin.o \
 ./src/I2C.o \
 ./src/ITM_write.o \
+./src/LiquidCrystal.o \
 ./src/LpcUart.o \
 ./src/ModbusMaster.o \
 ./src/ModbusRegister.o \
@@ -36,7 +40,9 @@ OBJS += \
 ./src/sysinit.o 
 
 CPP_DEPS += \
+./src/DigitalIoPin.d \
 ./src/I2C.d \
+./src/LiquidCrystal.d \
 ./src/LpcUart.d \
 ./src/ModbusMaster.d \
 ./src/ModbusRegister.d \
