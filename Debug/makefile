@@ -44,7 +44,7 @@ all: Proj.axf
 Proj.axf: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU C++ Linker'
-	arm-none-eabi-c++ -nostdlib -L"C:\Users\erkki\Documents\MCUXpressoIDE_11.0.0_2516\workspace\lpc_board_nxp_lpcxpresso_1549\Debug" -L"C:\Users\erkki\Documents\MCUXpressoIDE_11.0.0_2516\workspace\lpc_chip_15xx\Debug" -Xlinker -Map="Proj.map" -Xlinker --cref -Xlinker --gc-sections -Xlinker -print-memory-usage -mcpu=cortex-m3 -mthumb -T "Proj_Debug.ld" -o "Proj.axf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-c++ -nostdlib -L"C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_board_nxp_lpcxpresso_1549\Debug" -L"C:\Users\marti\Documents\MCUXpressoIDE_11.1.0_3209\workspace\lpc_chip_15xx\Debug" -Xlinker -Map="Proj.map" -Xlinker --cref -Xlinker --gc-sections -Xlinker -print-memory-usage -mcpu=cortex-m3 -mthumb -T "Proj_Debug.ld" -o "Proj.axf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
