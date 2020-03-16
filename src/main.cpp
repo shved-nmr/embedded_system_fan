@@ -307,13 +307,15 @@ int main(void) {
 
 	console::log(50, "Status=%04X\n", (int) StatusWord); // for debugging
 
-	int i = 0;
+	int fanSpeed = 0;
 
 	I2C i2c { { } };
 	uint8_t i2cdata[3];
 	uint8_t write_cmd = 0xF1;
 
 	int pressure = 0;
+	bool mode = 0;
+	int speed = 0;
 
 	DigitalIoPin b1(0, 10, 1, 1, 1);
 	DigitalIoPin b2(0, 16, 1, 1, 1);
@@ -322,6 +324,7 @@ int main(void) {
 	int b1timer = 0;
 	int b2timer = 0;
 	int b3timer = 0;
+	int pressureDifferenceTimer = 0;
 
 	DigitalIoPin rs(0, 8, false, true, false);
 	DigitalIoPin en(1, 6, false, true, false);
@@ -336,52 +339,105 @@ int main(void) {
 	lcd.setCursor(1, 1);
 	lcd.print("Pressure:");
 	//13,1 dynamic number
-	char pressurearr[7];
+	char pressurearr[6];
+	char speedarr[6];
 
 	while (1) {
-		i2c.write(0x40, &write_cmd, 1);
-		Sleep(10);
-		i2c.read(0x40, i2cdata, 3);
-		int16_t val = i2cdata[0] << 8 | i2cdata[1];
-		val = val / 240; //Convert to Pascal
-		val = val * 0.95; //Atmospheric correction
-		console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val, i2cdata[2]);
-		// just print the value without checking if we got a -1
-		//console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
-		//		(int) Current);
-		if (val < pressure - 3 || val > pressure + 3) {
-			if (pressure > 0) {
-				if (val < pressure) { //50 pascal
-					i += 500;
-				} else if (val > pressure) {
-					i -= 500;
-				}
-			} else {
-				i = 0;
-			}
-		}
-		if (b1.read() && b1timer == 0) {
-			if (pressure < 120) {
-				pressure += 5;
-				b1timer = 3;
-			}
-		}
 		if (b2.read() && b2timer == 0) {
+			mode = !mode;
 			b2timer = 3;
 		}
-		if (b3.read() && b3timer == 0) {
-			if (pressure > 0) {
-				pressure -= 5;
-				b3timer = 3;
+		switch (mode) {
+		case 0: {
+			lcd.setCursor(1, 1);
+			lcd.print("Pressure:");
+			i2c.write(0x40, &write_cmd, 1);
+			Sleep(10);
+			i2c.read(0x40, i2cdata, 3);
+			int16_t val = i2cdata[0] << 8 | i2cdata[1];
+			val = val / 240; //Convert to Pascal
+			val = val * 0.95; //Atmospheric correction
+			console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val, i2cdata[2]);
+			// just print the value without checking if we got a -1
+			//console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
+			//		(int) Current);
+			if (val < pressure - 3 || val > pressure + 3) {
+				if (pressure > 0) {
+					if (val < pressure) { //50 pascal
+						if (fanSpeed < 20000)
+							fanSpeed += 500;
+					} else if (val > pressure) {
+						fanSpeed -= 500;
+					}
+				} else {
+					fanSpeed = 0;
+				}
 			}
-		}
-		lcd.setCursor(10, 1);
-		snprintf(pressurearr, 7, "%3d\pa", pressure);
-		lcd.print(pressurearr);
-		// frequency is scaled:
-		// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
-		setFrequency(node, i);
+			if (b1.read() && b1timer == 0) {
+				if (pressure < 120) {
+					pressure += 5;
+					b1timer = 3;
+				}
+			}
+			if (b3.read() && b3timer == 0) {
+				if (pressure > 0) {
+					pressure -= 5;
+					b3timer = 3;
+				}
+			}
+			lcd.setCursor(10, 1);
+			snprintf(pressurearr, 6, "%3d\pa", pressure);
+			lcd.print(pressurearr);
+			// frequency is scaled:
+			// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
+			setFrequency(node, fanSpeed);
 
+			if (abs(val - pressure) > 5) {
+				pressureDifferenceTimer++;
+				if (pressureDifferenceTimer > 12) {
+					lcd.setCursor(0, 0);
+					lcd.print("Pressuren't");
+				}
+			} else {
+				pressureDifferenceTimer = 0;
+				lcd.setCursor(0, 0);
+				lcd.print("Automatic  ");
+			}
+			break;
+		}
+		case 1: {
+			i2c.write(0x40, &write_cmd, 1);
+			Sleep(10);
+			i2c.read(0x40, i2cdata, 3);
+			int16_t val = i2cdata[0] << 8 | i2cdata[1];
+			val = val / 240; //Convert to Pascal
+			val = val * 0.95; //Atmospheric correction
+			if (b1.read() && b1timer == 0) {
+				if (speed < 100) {
+					speed += 5;
+					b1timer = 3;
+				}
+			}
+			if (b3.read() && b3timer == 0) {
+				if (speed > 0) {
+					speed -= 5;
+					b3timer = 3;
+				}
+			}
+			lcd.setCursor(0, 0);
+			lcd.print("Manual      ");
+			lcd.setCursor(1, 1);
+			snprintf(pressurearr, 6, "%3d\pa", val);
+			snprintf(speedarr, 6, "%3d\%c", speed, 37);
+			std::string buffer = "P:";
+			buffer += pressurearr;
+			buffer += " S:";
+			buffer += speedarr  ;
+			lcd.print(buffer);
+			setFrequency(node, speed * 200);
+			break;
+		}
+		}
 		b1timer--;
 		b2timer--;
 		b3timer--;
