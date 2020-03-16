@@ -187,14 +187,15 @@ bool setFrequency(ModbusMaster &node, uint16_t freq) {
 	int result;
 	int ctr;
 	bool atSetpoint;
-	const int delay = 500;
+	const int delay = 300;
 
 	ModbusRegister Frequency(&node, 1); // reference 1
 	ModbusRegister StatusWord(&node, 3);
 
 	Frequency = freq; // set motor frequency
 
-	console::log(50, "Set freq = %d\n", freq / 40); // for debugging
+	//TODO
+	//console::log(50, "Set freq = %d\n", freq / 40); // for debugging
 
 	// wait until we reach set point or timeout occurs
 	ctr = 0;
@@ -209,7 +210,8 @@ bool setFrequency(ModbusMaster &node, uint16_t freq) {
 		ctr++;
 	} while (ctr < 20 && !atSetpoint);
 
-	console::log(50, "Elapsed: %d\n", ctr * delay); // for debugging
+	//TODO
+	//console::log(50, "Elapsed: %d\n", ctr * delay); // for debugging
 
 	return atSetpoint;
 }
@@ -313,9 +315,13 @@ int main(void) {
 
 	int pressure = 0;
 
-	DigitalIoPin b1(0, 10, 1, 1, 0);
-	DigitalIoPin b2(0, 16, 1, 1, 0);
-	DigitalIoPin b3(1, 3, 1, 1, 0);
+	DigitalIoPin b1(0, 10, 1, 1, 1);
+	DigitalIoPin b2(0, 16, 1, 1, 1);
+	DigitalIoPin b3(1, 3, 1, 1, 1);
+
+	int b1timer = 0;
+	int b2timer = 0;
+	int b3timer = 0;
 
 	DigitalIoPin rs(0, 8, false, true, false);
 	DigitalIoPin en(1, 6, false, true, false);
@@ -334,29 +340,40 @@ int main(void) {
 
 	while (1) {
 		i2c.write(0x40, &write_cmd, 1);
-		Sleep(1000);
+		Sleep(10);
 		i2c.read(0x40, i2cdata, 3);
 		int16_t val = i2cdata[0] << 8 | i2cdata[1];
 		val = val / 240; //Convert to Pascal
 		val = val * 0.95; //Atmospheric correction
 		console::log(100, "Sensor1: %u\nSensorFLAG: %u\n", val, i2cdata[2]);
 		// just print the value without checking if we got a -1
-		console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
-				(int) Current);
-		if (val < pressure - 2 || val > pressure + 2) {
-			if (val < pressure) { //50 pascal
-				i += 500;
-			} else if (val > pressure) {
-				i -= 500;
+		//console::log(50, "F=%4d, I=%4d\n", (int) OutputFrequency,
+		//		(int) Current);
+		if (val < pressure - 3 || val > pressure + 3) {
+			if (pressure > 0) {
+				if (val < pressure) { //50 pascal
+					i += 500;
+				} else if (val > pressure) {
+					i -= 500;
+				}
+			} else {
+				i = 0;
 			}
 		}
-		if(b1.read()) {
-			pressure+=5;
-			Sleep(200);
+		if (b1.read() && b1timer == 0) {
+			if (pressure < 120) {
+				pressure += 5;
+				b1timer = 3;
+			}
 		}
-		if(b3.read()) {
-			pressure-=5;
-			Sleep(200);
+		if (b2.read() && b2timer == 0) {
+			b2timer = 3;
+		}
+		if (b3.read() && b3timer == 0) {
+			if (pressure > 0) {
+				pressure -= 5;
+				b3timer = 3;
+			}
 		}
 		lcd.setCursor(10, 1);
 		snprintf(pressurearr, 7, "%3d\pa", pressure);
@@ -365,6 +382,18 @@ int main(void) {
 		// 20000 = 50 Hz, 0 = 0 Hz, linear scale 400 units/Hz
 		setFrequency(node, i);
 
+		b1timer--;
+		b2timer--;
+		b3timer--;
+		if (b1timer < 0) {
+			b1timer = 0;
+		}
+		if (b2timer < 0) {
+			b2timer = 0;
+		}
+		if (b3timer < 0) {
+			b3timer = 0;
+		}
 	}
 	return 1;
 }
